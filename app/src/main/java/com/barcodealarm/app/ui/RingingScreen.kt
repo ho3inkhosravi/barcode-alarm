@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarcodeReader
 import androidx.compose.material.icons.filled.Bed
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -138,7 +138,7 @@ fun RingingScreen(
                     }
                 }
                 LinearProgressIndicator(
-                    progress = { progress.value },
+                    progress = progress.value,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 32.dp, vertical = 16.dp)
@@ -171,7 +171,7 @@ fun RingingScreen(
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
         ) {
-            Icon(Icons.Default.BarcodeReader, contentDescription = null, modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(32.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Text("اسکن بارکد", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }

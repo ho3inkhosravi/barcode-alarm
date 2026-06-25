@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.barcodealarm.app.data.AlarmItem
 import com.barcodealarm.app.alarm.AlarmScheduler
+import com.barcodealarm.app.alarm.AlarmService
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
