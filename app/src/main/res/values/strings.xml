@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">آلارم بارکد</string>
+    <string name="alarm_list">لیست آلارم‌ها</string>
+    <string name="add_alarm">افزودن آلارم</string>
+    <string name="alarm_time">ساعت آلارم</string>
+    <string name="alarm_label">عنوان آلارم</string>
+    <string name="scan_barcode">اسکن بارکد</string>
+    <string name="alarm_set">آلارم تنظیم شد</string>
+    <string name="alarm_disabled">آلارم غیرفعال شد</string>
+    <string name="alarm_deleted">آلارم حذف شد</string>
+    <string name="scan_to_stop">برای قطع آلارم، بارکد را اسکن کنید!</string>
+    <string name="time_remaining">زمان باقی‌مانده</string>
+    <string name="barcode_match">بارکد درست بود! آلارم قطع شد</string>
+    <string name="barcode_mismatch">بارکد اشتباه است! دوباره اسکن کنید</string>
+    <string name="alarm_snooze">چرت زدن</string>
+    <string name="alarm_off">قطع</string>
+    <string name="repeat">تکرار</string>
+    <string name="select_sound">انتخاب صدا</string>
+    <string name="select_barcode">انتخاب بارکد محصول</string>
+    <string name="no_barcode">بارکودی انتخاب نشده</string>
+    <string name="saturday">شنبه</string>
+    <string name="sunday">یکشنبه</string>
+    <string name="monday">دوشنبه</string>
+    <string name="tuesday">سه‌شنبه</string>
+    <string name="wednesday">چهارشنبه</string>
+    <string name="thursday">پنجشنبه</string>
+    <string name="friday">جمعه</string>
+    <string name="every_day">هر روز</string>
+    <string name="once">یک‌بار</string>
+    <string name="save">ذخیره</string>
+    <string name="cancel">لغو</string>
+    <string name="delete">حذف</string>
+    <string name="edit">ویرایش</string>
+    <string name="confirm_delete">آیا مطمئنید؟</string>
+    <string name="camera_permission">دسترسی به دوربین نیاز است</string>
+    <string name="exact_alarm_permission">دسترسی آلارم دقیق نیاز است</string>
+    <string name="snooze_duration">مدت چرت</string>
+    <string name="barcode_scanned">بارکد: %s</string>
+    <string name="alarm_went_off">آلارم شما به صدا درآمد!</string>
+</resources>
