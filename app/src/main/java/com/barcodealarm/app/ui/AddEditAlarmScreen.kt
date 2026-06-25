@@ -3,8 +3,12 @@ package com.barcodealarm.app.ui
 import android.app.Activity
 import android.app.TimePickerDialog
 import android.content.Intent
+import android.media.RingtoneManager
+import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
@@ -51,14 +56,34 @@ fun AddEditAlarmScreen(
     }
     var snoozeMinutes by remember { mutableStateOf(initialAlarm?.snoozeMinutes ?: 5) }
     var scanTimeoutSeconds by remember { mutableStateOf(initialAlarm?.scanTimeoutSeconds ?: 30) }
+    var soundUri by remember { mutableStateOf(initialAlarm?.soundUri ?: "default") }
+    var soundName by remember { mutableStateOf("صدای پیش‌فرض آلارم") }
 
-    val dayNames = listOf("شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه")
-
+    // انتخاب بارکد
     val barcodeLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             barcodeValue = result.data?.getStringExtra("barcode_value") ?: ""
+        }
+    }
+
+    // انتخاب آهنگ (RingtoneManager)
+    val ringtoneLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                result.data?.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
+            }
+            if (uri != null) {
+                soundUri = uri.toString()
+                val ringtone = RingtoneManager.getRingtone(context, uri)
+                soundName = ringtone.title(context)
+            }
         }
     }
 
@@ -78,18 +103,7 @@ fun AddEditAlarmScreen(
                 },
                 actions = {
                     IconButton(onClick = {
-                        val alarm = AlarmItem(
-                            id = initialAlarm?.id ?: System.currentTimeMillis(),
-                            hour = hour,
-                            minute = minute,
-                            label = label,
-                            barcodeValue = barcodeValue,
-                            isEnabled = true,
-                            isOneTime = isOneTime,
-                            repeatDays = repeatDays,
-                            snoozeMinutes = snoozeMinutes,
-                            scanTimeoutSeconds = scanTimeoutSeconds
-                        )
+                        val alarm = buildAlarm(initialAlarm, hour, minute, label, barcodeValue, isOneTime, repeatDays, snoozeMinutes, scanTimeoutSeconds, soundUri)
                         onSave(alarm)
                     }) {
                         Icon(Icons.Default.Check, contentDescription = "ذخیره")
@@ -109,7 +123,7 @@ fun AddEditAlarmScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Time Picker Card
+            // انتخاب ساعت
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -122,11 +136,7 @@ fun AddEditAlarmScreen(
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "ساعت آلارم",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("ساعت آلارم", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = String.format("%02d:%02d", hour, minute),
@@ -136,26 +146,19 @@ fun AddEditAlarmScreen(
                         modifier = Modifier.clickable {
                             TimePickerDialog(
                                 context,
-                                { _, h, m ->
-                                    hour = h
-                                    minute = m
-                                },
+                                { _, h, m -> hour = h; minute = m },
                                 hour, minute, true
                             ).show()
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "برای تغییر ضربه بزنید",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("برای تغییر ضربه بزنید", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Barcode Selection
+            // انتخاب بارکد
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -186,11 +189,7 @@ fun AddEditAlarmScreen(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "بارکد محصول",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text("بارکد محصول", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                         Text(
                             text = if (barcodeValue.isEmpty()) "برای اسکن ضربه بزنید"
                                    else "بارکد: $barcodeValue",
@@ -203,7 +202,53 @@ fun AddEditAlarmScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Label
+            // === انتخاب آهنگ آلارم ===
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER).apply {
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, "انتخاب آهنگ آلارم")
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                            putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                            putExtra(
+                                RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI,
+                                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                            )
+                        }
+                        ringtoneLauncher.launch(intent)
+                    },
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.MusicNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("آهنگ آلارم", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            text = soundName,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // عنوان آلارم
             OutlinedTextField(
                 value = label,
                 onValueChange = { label = it },
@@ -215,7 +260,7 @@ fun AddEditAlarmScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Repeat options
+            // تکرار
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -245,7 +290,6 @@ fun AddEditAlarmScreen(
 
                     if (!isOneTime) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        // Day selector
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -283,7 +327,7 @@ fun AddEditAlarmScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Settings Card
+            // تنظیمات
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -293,7 +337,6 @@ fun AddEditAlarmScreen(
                     Text("تنظیمات", fontWeight = FontWeight.Medium, fontSize = 16.sp)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Scan timeout
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -312,7 +355,6 @@ fun AddEditAlarmScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Snooze
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -333,21 +375,10 @@ fun AddEditAlarmScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Save button
+            // دکمه ذخیره
             Button(
                 onClick = {
-                    val alarm = AlarmItem(
-                        id = initialAlarm?.id ?: System.currentTimeMillis(),
-                        hour = hour,
-                        minute = minute,
-                        label = label,
-                        barcodeValue = barcodeValue,
-                        isEnabled = true,
-                        isOneTime = isOneTime,
-                        repeatDays = repeatDays,
-                        snoozeMinutes = snoozeMinutes,
-                        scanTimeoutSeconds = scanTimeoutSeconds
-                    )
+                    val alarm = buildAlarm(initialAlarm, hour, minute, label, barcodeValue, isOneTime, repeatDays, snoozeMinutes, scanTimeoutSeconds, soundUri)
                     onSave(alarm)
                 },
                 modifier = Modifier
@@ -374,4 +405,32 @@ fun AddEditAlarmScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+// تابع کمکی برای ساخت آلارم
+private fun buildAlarm(
+    initialAlarm: AlarmItem?,
+    hour: Int,
+    minute: Int,
+    label: String,
+    barcodeValue: String,
+    isOneTime: Boolean,
+    repeatDays: List<Boolean>,
+    snoozeMinutes: Int,
+    scanTimeoutSeconds: Int,
+    soundUri: String
+): AlarmItem {
+    return AlarmItem(
+        id = initialAlarm?.id ?: System.currentTimeMillis(),
+        hour = hour,
+        minute = minute,
+        label = label,
+        barcodeValue = barcodeValue,
+        isEnabled = true,
+        isOneTime = isOneTime,
+        repeatDays = repeatDays,
+        snoozeMinutes = snoozeMinutes,
+        scanTimeoutSeconds = scanTimeoutSeconds,
+        soundUri = soundUri
+    )
 }

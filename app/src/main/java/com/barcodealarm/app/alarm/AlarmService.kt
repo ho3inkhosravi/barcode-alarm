@@ -5,9 +5,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.VibrationEffect
@@ -15,7 +17,6 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.barcodealarm.app.MainActivity
-import com.barcodealarm.app.R
 import com.barcodealarm.app.BarcodeAlarmApp
 
 class AlarmService : Service() {
@@ -25,6 +26,7 @@ class AlarmService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         startForegroundNotification()
     }
 
@@ -54,12 +56,18 @@ class AlarmService : Service() {
     }
 
     private fun startAlarmSound(alarmId: Long) {
-        // Vibration
         startVibration()
 
-        // Sound
         try {
-            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            // گرفتن صدای سفارشی از تنظیمات یا صدای پیش‌فرض آلارم
+            val prefs = getSharedPreferences("barcode_alarm_prefs", 0)
+            val customSoundUri = prefs.getString("alarm_sound_uri_$alarmId", null)
+            val alarmUri = if (customSoundUri != null) {
+                Uri.parse(customSoundUri)
+            } else {
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            }
+
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(this@AlarmService, alarmUri)
                 setAudioAttributes(
@@ -96,6 +104,14 @@ class AlarmService : Service() {
         }
     }
 
+    // بی‌صدا کردن موقت (توقف پخش بدون از بین بردن سرویس)
+    fun muteAlarmSound() {
+        mediaPlayer?.let {
+            if (it.isPlaying) it.pause()
+        }
+        vibrator?.cancel()
+    }
+
     fun stopAlarmSound() {
         mediaPlayer?.let {
             if (it.isPlaying) it.stop()
@@ -110,12 +126,21 @@ class AlarmService : Service() {
 
     override fun onDestroy() {
         stopAlarmSound()
+        instance = null
         super.onDestroy()
     }
 
     companion object {
+        @Volatile
+        private var instance: AlarmService? = null
+
         fun stop(context: Context) {
             context.stopService(Intent(context, AlarmService::class.java))
+        }
+
+        // بی‌صدا کردن از هر جای اپ
+        fun mute() {
+            instance?.muteAlarmSound()
         }
     }
 }

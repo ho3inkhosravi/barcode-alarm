@@ -44,6 +44,12 @@ object AlarmScheduler {
                 pendingIntent
             )
         }
+
+        // ذخیره URI صدای سفارشی برای استفاده در سرویس
+        if (alarm.soundUri != "default" && alarm.soundUri.isNotEmpty()) {
+            val prefs = context.getSharedPreferences("barcode_alarm_prefs", 0)
+            prefs.edit().putString("alarm_sound_uri_${alarm.id}", alarm.soundUri).apply()
+        }
     }
 
     fun cancelAlarm(context: Context, alarmId: Long) {
